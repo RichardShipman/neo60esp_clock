@@ -32,6 +32,8 @@ int lo = DAYLO;
 byte hour_hand, minute_hand, second_hand, previous_second;
 int minFrame=0;
 int hourFrame=0;
+byte hourPattern=1;
+byte minPattern=1;  
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
@@ -104,7 +106,7 @@ void setup() {
   pixels.setBrightness(254);
 }
 
-void animateHour(int frame) {
+void animateHour(int frame, byte pattern) {
    Serial.printf("Animating for the hour change %d frame %d\n",hour(),frame);
    if (frame <= 30) {
       int i=frame;
@@ -112,9 +114,22 @@ void animateHour(int frame) {
       clearHands();
       calcMinute();
       calcSeconds();
-      for (int j=0; j<i; j++) {
-         pixels.setPixelColor((hour_hand+j)%60,pixels.Color(bright,0,0));
-         pixels.setPixelColor((hour_hand+60-j)%60,pixels.Color(bright,0,0));
+      switch (pattern) {
+      case 1:
+         for (int j=0; j<i; j++) {
+            pixels.setPixelColor((hour_hand+j)%60,pixels.Color(bright,0,0));
+            pixels.setPixelColor((hour_hand+60-j)%60,pixels.Color(bright,0,0));
+         }
+         break;
+      case 2:
+         pixels.setPixelColor((hour_hand+i)%60,pixels.Color(bright,0,0));
+         pixels.setPixelColor((hour_hand+60-i)%60,pixels.Color(bright,0,0));
+         break;
+      case 3:
+         pixels.setPixelColor((hour_hand+i)%60,pixels.Color(bright,0,0));
+         pixels.setPixelColor((hour_hand+i+59)%60,pixels.Color(mid,0,0));
+         pixels.setPixelColor((hour_hand+i+1)%60,pixels.Color(mid,0,0));
+         break;
       }
    } else if (frame >30 && frame<=60) {
       int i=minFrameMax-frame-3;
@@ -122,31 +137,56 @@ void animateHour(int frame) {
       clearHands();
       calcMinute();
       calcSeconds();
-      for (int j=0; j<i; j++) {
-         pixels.setPixelColor((hour_hand+j)%60,pixels.Color(bright,0,0));
-         pixels.setPixelColor((hour_hand+60-j)%60,pixels.Color(bright,0,0));
+      switch (pattern) {
+      case 1:  
+         for (int j=0; j<i; j++) {
+            pixels.setPixelColor((hour_hand+j)%60,pixels.Color(bright,0,0));
+            pixels.setPixelColor((hour_hand+60-j)%60,pixels.Color(bright,0,0));
+         }
+         break;
+      case 2:
+         pixels.setPixelColor((hour_hand+i)%60,pixels.Color(bright,0,0));
+         pixels.setPixelColor((hour_hand+60-i)%60,pixels.Color(bright,0,0));
+         break;
+      case 3:
+         pixels.setPixelColor((hour_hand+i)%60,pixels.Color(bright,0,0));
+         pixels.setPixelColor((hour_hand+i+59)%60,pixels.Color(mid,0,0));
+         pixels.setPixelColor((hour_hand+i+1)%60,pixels.Color(mid,0,0));
+         break;
       }
    }
    pixels.show();
 }
 
-void animateMinute(int frame) {
-   Serial.printf("Animating for the minute change %d Frame %d\n",minute(),frame);
+void animateMinute(int frame, byte pattern) {
+   Serial.printf("Animating for the minute change %d Frame %d pattern %d\n",minute(),frame, pattern);
    if (frame <= 30) {
       int i=frame;
       calcHands();
       clearHands();
       calcHour();
       calcSeconds();
-      pixels.setPixelColor((minute_hand+i)%60,pixels.getPixelColor((minute_hand+i)%60)+pixels.Color(0,bright,0));
-      pixels.setPixelColor((minute_hand+60-i)%60,pixels.getPixelColor((minute_hand+60-i)%60)+pixels.Color(0,bright,0));
+      if (pattern == 1 || pattern == 3) {
+         pixels.setPixelColor((minute_hand+i)%60,pixels.getPixelColor((minute_hand+i)%60)+pixels.Color(0,bright,0));
+      }
+      if (pattern < 3) {
+         pixels.setPixelColor((minute_hand+60-i)%60,pixels.getPixelColor((minute_hand+60-i)%60)+pixels.Color(0,bright,0));
+      }
       if (i>0) {
-         pixels.setPixelColor((minute_hand+i+59)%60,pixels.getPixelColor((minute_hand+i+59)%60)+pixels.Color(0,mid,0));
-         pixels.setPixelColor((minute_hand+61-i)%60,pixels.getPixelColor((minute_hand+61-i)%60)+pixels.Color(0,mid,0));   
+         if (pattern == 1 || pattern == 3) {
+            pixels.setPixelColor((minute_hand+i+59)%60,pixels.getPixelColor((minute_hand+i+59)%60)+pixels.Color(0,mid,0));
+         }
+         if (pattern < 3) {
+            pixels.setPixelColor((minute_hand+61-i)%60,pixels.getPixelColor((minute_hand+61-i)%60)+pixels.Color(0,mid,0));   
+         }
       }
       if (i>1) {
-         pixels.setPixelColor((minute_hand+i+58)%60,pixels.getPixelColor((minute_hand+i+58)%60)+pixels.Color(0,lo,0));
-         pixels.setPixelColor((minute_hand+62-i)%60,pixels.getPixelColor((minute_hand+62-i)%60)+pixels.Color(0,lo,0));   
+         if (pattern == 1 || pattern == 3) {
+            pixels.setPixelColor((minute_hand+i+58)%60,pixels.getPixelColor((minute_hand+i+58)%60)+pixels.Color(0,lo,0));
+         }
+         if (pattern < 3) {
+            pixels.setPixelColor((minute_hand+62-i)%60,pixels.getPixelColor((minute_hand+62-i)%60)+pixels.Color(0,lo,0)); 
+         }   
       }
    } else if (frame >30 && frame<=60) {
       int i=minFrameMax-frame-3;
@@ -154,20 +194,28 @@ void animateMinute(int frame) {
       clearHands();
       calcHour();
       calcSeconds();
-      pixels.setPixelColor((minute_hand+i)%60,pixels.getPixelColor((minute_hand+i)%60)+pixels.Color(0,bright,0));
-      pixels.setPixelColor((minute_hand+60-i)%60,pixels.getPixelColor((minute_hand+60-i)%60)+pixels.Color(0,bright,0));
-      pixels.setPixelColor((minute_hand+i+1)%60,pixels.getPixelColor((minute_hand+i+1)%60)+pixels.Color(0,mid,0));
-      pixels.setPixelColor((minute_hand+59-i)%60,pixels.getPixelColor((minute_hand+59-i)%60)+pixels.Color(0,mid,0));   
-      pixels.setPixelColor((minute_hand+i+2)%60,pixels.getPixelColor((minute_hand+i+2)%60)+pixels.Color(0,lo,0));
-      pixels.setPixelColor((minute_hand+58-i)%60,pixels.getPixelColor((minute_hand+58-i)%60)+pixels.Color(0,lo,0));   
+      if (pattern == 1 || pattern == 3) {
+         pixels.setPixelColor((minute_hand+60-i)%60,pixels.getPixelColor((minute_hand+60-i)%60)+pixels.Color(0,bright,0));
+         pixels.setPixelColor((minute_hand+59-i)%60,pixels.getPixelColor((minute_hand+59-i)%60)+pixels.Color(0,mid,0));   
+         pixels.setPixelColor((minute_hand+58-i)%60,pixels.getPixelColor((minute_hand+58-i)%60)+pixels.Color(0,lo,0));   
+      }
+      if (pattern < 3) {
+         pixels.setPixelColor((minute_hand+i)%60,pixels.getPixelColor((minute_hand+i)%60)+pixels.Color(0,bright,0));
+         pixels.setPixelColor((minute_hand+i+1)%60,pixels.getPixelColor((minute_hand+i+1)%60)+pixels.Color(0,mid,0));
+         pixels.setPixelColor((minute_hand+i+2)%60,pixels.getPixelColor((minute_hand+i+2)%60)+pixels.Color(0,lo,0));
+      }
    } else {
       calcHands();
       clearHands();
       calcHour();
       calcSeconds();
       pixels.setPixelColor(minute_hand,pixels.getPixelColor(minute_hand)+pixels.Color(0,bright,0));
-      pixels.setPixelColor((minute_hand+1)%60,pixels.getPixelColor((minute_hand+1)%60)+pixels.Color(0,lo,0));
-      pixels.setPixelColor((minute_hand+59)%60,pixels.getPixelColor((minute_hand+59)%60)+pixels.Color(0,lo,0));   
+      if (pattern == 1 || pattern == 3) {
+         pixels.setPixelColor((minute_hand+1)%60,pixels.getPixelColor((minute_hand+1)%60)+pixels.Color(0,lo,0));
+      }
+      if (pattern < 3) {
+         pixels.setPixelColor((minute_hand+59)%60,pixels.getPixelColor((minute_hand+59)%60)+pixels.Color(0,lo,0));   
+      }
    }
    pixels.show();
 }
@@ -215,8 +263,10 @@ void loop() {
 
   if (minute()==0 && second()<3 && hourFrame==0 ) {
     hourFrame=hourFrameMax;
+    hourPattern=random(1,4);
   } else if (second()==0 && minFrame==0) {
     minFrame=minFrameMax;
+    minPattern=random(1,4);
   }
   if (hour()>=23 || hour()<=7) {
      if (bright != NIGHTBRIGHT) {
@@ -232,10 +282,10 @@ void loop() {
   delay(DELAY);
   
   if (hourFrame>0) {
-     animateHour(hourFrameMax-hourFrame);
+     animateHour(hourFrameMax-hourFrame, hourPattern);
      hourFrame--;  
   } else if (minFrame>0) {
-     animateMinute(minFrameMax-minFrame);
+     animateMinute(minFrameMax-minFrame, minPattern);
      minFrame--;  
   } else if (second_hand!=previous_second) {
      previous_second=second_hand;
